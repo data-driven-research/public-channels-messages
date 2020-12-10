@@ -22,24 +22,26 @@ def _text_parser(text):
         return text
 
 
-def message_parser(message):
+def _message_parser(message):
     """Processes message's content - both metadata and text. """
     txt = _text_parser(message["text"])
     if txt:
         yield {
-            "id": message["id"],
+            "id": message["id"], 
             "type": message["type"],
             "date": message["date"],
-            "text": _text_parser(message["text"]),
+            "text": txt,
         }
+        
+def fetch_messages(data):
+    """Wraps `message_parser` in a loop fetching each message in `data`. """
+    for message in data["messages"]:
+        yield from _message_parser(message)
 
 
 def json_to_dataframe(data):
     """Creates an instance of Channel from `data`. """
-    df = pd.concat(
-        [pd.DataFrame(message_parser(item)) for item in data["messages"]],
-        ignore_index=True,
-    )
+    df = pd.DataFrame(fetch_messages(data))
     return Channel(
         channel_id=data["id"],
         channel_name=data["name"],
@@ -51,12 +53,10 @@ def json_to_dataframe(data):
 def main():
     with open(PATH / "raw" / "result.json", "r", encoding="utf-8") as f:
         data = json.load(f)
-
     result = json_to_dataframe(data)
-    content = result.posts
-    file_name = result.channel_id
-
-    content.to_csv(PATH / "interim" / f"result_{file_name}.csv", index=False)
+    result.posts.to_csv(
+        PATH / "interim" / f"result_{result.channel_id}.csv", index=False
+    )
 
 
 if __name__ == "__main__":
