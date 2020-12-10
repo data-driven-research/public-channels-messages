@@ -6,17 +6,18 @@ from collections import namedtuple
 
 
 PATH = Path(__file__).resolve().parent / "data"
+Channel = namedtuple("Channel", "channel_id channel_name channel_type posts")
 
 
-def _check_str(text):
+def _is_str(text):
     """Checks whether `text` is a non-empty str. """
     return isinstance(text, str) and text != ""
 
 
 def _text_parser(text):
-    """Processes message["text"] content"""
+    """Processes message["text"] content. """
     if isinstance(text, list):
-        return "; ".join(chunk for chunk in text if _check_str(chunk))
+        return "; ".join(chunk for chunk in text if _is_str(chunk))
     elif isinstance(text, str) and text != "":
         return text
 
@@ -34,16 +35,16 @@ def message_parser(message):
 
 
 def json_to_dataframe(data):
-    dataframe = pd.concat(
+    """Creates an instance of Channel from `data`. """
+    df = pd.concat(
         [pd.DataFrame(message_parser(item)) for item in data["messages"]],
         ignore_index=True,
     )
-    Channel = namedtuple("Channel", "channel_id channel_name channel_type posts")
     return Channel(
         channel_id=data["id"],
         channel_name=data["name"],
         channel_type=data["type"],
-        posts=dataframe,
+        posts=df,
     )
 
 
